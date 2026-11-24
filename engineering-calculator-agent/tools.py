@@ -69,7 +69,7 @@ def calculate_dc_power(voltage_v, current_a):
         return {"error": "The calculated power is outside the supported range."}
 
     return {
-        "formula": "P = V × I",
+        "formula": "P = V x I",
         "voltage_v": voltage_v,
         "current_a": current_a,
         "power_w": power_w,

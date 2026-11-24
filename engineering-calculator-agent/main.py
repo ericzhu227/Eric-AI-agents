@@ -1,20 +1,24 @@
 from getpass import getpass
 from pathlib import Path
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from agent import Agent
 from tools import TOOL_DEFINITIONS, calculate_dc_power, convert_units
 
 
 def main():
-    api_key = getpass("Enter your OpenAI API key: ").strip()
+    try:
+        api_key = getpass("Enter your OpenAI API key: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nAPI key entry cancelled.")
+        return
     if not api_key:
         print("An OpenAI API key is required.")
         return
 
     project_dir = Path(__file__).resolve().parent
-    skill_path = project_dir / "engineering-calculator-agent" / "SKILL.md"
+    skill_path = project_dir / "SKILL.md"
 
     calculator = Agent(
         client=OpenAI(api_key=api_key),
@@ -36,7 +40,15 @@ def main():
             break
 
         if message:
-            print("Calculator:", calculator.run(message))
+            try:
+                answer = calculator.run(message)
+            except RateLimitError as error:
+                if error.code == "insufficient_quota" or "no credits remaining" in error.message.lower():
+                    print("OpenAI API quota exhausted. Check your API organization's billing and usage limits, then restart the calculator.")
+                else:
+                    print("OpenAI API rate limit reached. Wait a moment before restarting the calculator.")
+                return
+            print("Calculator:", answer)
 
 
 if __name__ == "__main__":
